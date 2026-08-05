@@ -324,7 +324,7 @@
         <!-- Header -->
          <div class="card-header d-flex align-items-center gap-2">
           <div style="width: 8px;height: 8px; border-radius: 50%; background-color: green;"></div>
-          <span class="fw-semibold" style="font-size: 13px;">Support Agent</span>
+          <span class="fw-semibold" style="font-size: 13px;">Support Agent</b></span>
          </div>
 
          <!-- Chat area -->
@@ -344,7 +344,7 @@
              {% endfor %}
             {% else %}
             <div class="agent-message p-2 px-3" style="font-size: 13px; max-width: 85%;">
-              Hi {{ request.user.first_name }}, I'm Maya, How can I help you with your order today?
+              Hi <b><i>{{ request.user.first_name }}</i></b>, I'm <b>Sage</b>, How can I help you with your order today?
             </div>
             {% endif %}
           </div>
