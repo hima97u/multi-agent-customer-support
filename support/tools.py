@@ -1,6 +1,7 @@
+# For AI agents to query DB  these tools are like hands and brain is LLM
+
 from orders.models import Order, RefundRequest
 from django.utils import timezone
-from .tracking_data import DELIVERY_DATA
 
 
 
@@ -15,7 +16,7 @@ def get_order_details(order_id):
             "carrier": order.carrier,
             "tracking_number": order.tracking_number,
             "delivery_address": order.delivery,
-            "ordered_on": order.created_at.strftime("%d %b %Y"), # 25 May 2026
+            "ordered_on": order.created_at.strftime("%d %b %Y"), # 23 May 2006
             "days_since_order": (timezone.now() - order.created_at).days, # 20
         }
     except Order.DoesNotExist:
@@ -23,7 +24,7 @@ def get_order_details(order_id):
     
 
 def get_refund_history(user_id):
-    refunds = RefundRequest.objects.filter(user_id=user_id).order_by("-created_at")
+    refunds = RefundRequest.objects.filter(user_id=user_id).order_by("-created_at") # DESC order
 
     history = []
     for refund in refunds:
@@ -32,7 +33,7 @@ def get_refund_history(user_id):
             "product": refund.order.product_name,
             "reason": refund.reason,
             "status": refund.status,
-            "requested_on": refund.created_at.strftime("%d %b %Y"), # 25 May 2026
+            "requested_on": refund.created_at.strftime("%d %b %Y"), # 23 May 2006
         })
     return {
         "total_refund_requests": len(history),
@@ -41,6 +42,8 @@ def get_refund_history(user_id):
 
 
 def check_delivery_status(tracking_number, carrier):
+    #This dictionary provides default values in case no tracking data is found for the given tracking number.
+    #It indicates that the status is unknown and no tracking info is available.
     default_response = {
         "status": "Unknown",
         "last_location": "Tracking info unavailable",
