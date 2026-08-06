@@ -1,5 +1,6 @@
 from google import genai
 from django.conf import settings
+from .tools import get_order_details , get_refund_history , check_delivery_status
 
 client = genai.client(api_key=settings.GEMINI_API_KEY)
 model = settings.MODEL_NAME
@@ -107,6 +108,16 @@ SUPPORT_TOOLS = [
 
 
 # COMPONENT : 3 -> execute_tool() --> bridge b/w py funcns (or tools)
+
+def execute_tool(tool_name , tool_input):
+    if tool_name == "get_order_details":
+        return get_order_details(tool_input["order_id"])
+    
+    if tool_name == "get_refund_history":
+        return get_refund_history(tool_input["user_id"])
+    
+    if tool_name == "check_delivery_status":
+        return check_delivery_status(tool_input["tracking_number"], tool_input["carrier"])
 
 
 
