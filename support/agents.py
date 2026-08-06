@@ -54,6 +54,57 @@ Important rules:
 # COMPONENT : 2 -> support tools --> tool schemas  , that AI agents will read to execute best suitable func. from tools.py
 
 
+SUPPORT_TOOLS = [
+    {
+        "name": "get_order_details",
+        "description": "Fetch complete order details including status, carrier, tracking number and days since order was placed. Use this when customer mentions their order or complains about delivery.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "order_id": {
+                    "type": "integer",
+                    "description": "The order ID to look up"
+                }
+            },
+            "required": ["order_id"]
+        }
+    },
+
+    {
+        "name": "get_refund_history",
+        "description": "Get complete refund history for a user. Use this before making any refund related decisions.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "integer",
+                    "description": "The user ID to check refund history for"
+                }
+            },
+            "required": ["user_id"]
+        }
+    },
+
+    {
+        "name": "check_delivery_status",
+        "description": "Check current delivery status using tracking number and carrier. Use this when customer complains about delayed or missing delivery.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "tracking_number": {
+                    "type": "string",
+                    "description": "The shipment tracking number"
+                },
+                "carrier": {
+                    "type": "string",
+                    "description": "The carrier name for example BlueDart or Delhivery or any carrier as per our database"
+                }
+            },
+            "required": ["tracking_number", "carrier"]
+        }
+    },
+]
+
 
 # COMPONENT : 3 -> execute_tool() --> bridge b/w py funcns (or tools)
 
