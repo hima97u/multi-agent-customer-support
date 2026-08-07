@@ -415,13 +415,13 @@
 
     // send message to django view
     try{
-      const response = await fetch("/support/chat/{{order.id}}/", {
-        method: "POST",
-        headers: {
+      const response = await fetch("/support/chat/{{order.id}}/", { // where to send the message
+        method: "POST", // send as POST request
+        headers: { // how to send the message
           "Content-Type": "application/json",
           "X-CSRFToken": "{{ csrf_token }}"
         },
-        body: JSON.stringify({message: message})
+        body: JSON.stringify({message: message}) // what to send
       });
 
       const data = await response.json()
