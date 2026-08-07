@@ -26,7 +26,7 @@ SECRET_KEY = SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [locals().get('ALLOWED_HOSTS', '*')]
 
 
 # Application definition
@@ -41,6 +41,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'orders',
     'support',
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://chimp-panama-alike.ngrok-free.dev',
 ]
 
 MIDDLEWARE = [
