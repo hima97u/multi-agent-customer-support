@@ -411,6 +411,7 @@
     input.value = "";
     input.disabled = true;
 
+
     const typingTimeout = setTimeout(() => showTyping(), 1000); // show typing after 2 seconds
 
     // send message to django view
@@ -424,21 +425,29 @@
         body: JSON.stringify({message: message}) // what to send
       });
 
-      const data = await response.json()
-      hideTyping();
-      appendMessage(data.reply, "agent");
-      input.disabled = false;
-      input.focus();
-    }catch(error){
-      console.error("Error: ", error)
-      appendMessage("Sorry, something went wrong", "agent")
-      input.disabled = false;
-      input.focus();
-    } finally{
-      clearTimeout(typingTimeout);
-      hideTyping();
       
+      const data = await response.json();
+      hideTyping();
+      appendMessage(data.reply,"agent");
+
+      input.disabled=false;
+      input.focus();
+
+    }catch(error)
+    {
+       clearTimeout(typingTimeout);
+
+        console.error("Error:", error);
+
+        const typing = document.getElementById("typing-indicator");
+        if(typing) typing.remove();
+
+        appendMessage("sorry, something went wrong!", "agent");
+
+        input.disabled = false;
+        input.focus(); // puts the cursor back inside the input box.
     }
+    
   }
 
     // send message on Enter key
