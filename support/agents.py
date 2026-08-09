@@ -13,6 +13,7 @@ model = config("MODEL_NAME")
 
 # COMONENT : 1 --> Sage job description
 
+# behaavioral control of Sage agent
 SUPPORT_SYSTEM_PROMPT = """
 You are Sage, an AI customer support agent at CoolBreeze AC.
 Your goal is to resolve customer issues efficiently using available tools while providing accurate, helpful, and professional assistance.
@@ -129,36 +130,98 @@ def execute_tool(tool_name , tool_input):
 
 # COMONENT : 4 -> agent loop --> while loop that loops untill the task is done
 
-def run_support_agent(user_message,conversation_id):
-    conv = Conversation.objects.get(id=conversation_id) # giving all the msgs under 1 conversation to LLM so that it can understand the context of the conversation
+def run_support_agent(user_message, conversation_id, order_id, user_id):
+
+    conv = Conversation.objects.get(id=conversation_id)
 
     conversation_messages = []
 
-# Build the conversation history and send it to the LLM along with the user message and system prompt and tools so that it can understand the context of the conversation and give a reply accordingly
+    # Build conversation history
     for msg in conv.messages.order_by("created_at"):
         conversation_messages.append(
             types.Content(
-                    role="model" if msg.role == "agent" else "user",
-                    parts=[
-                        types.Part(text=msg.content)
-                    ]
+                role="model" if msg.role == "agent" else "user",
+                parts=[
+                    types.Part(text=msg.content)
+                ]
             )
-)
+        )
 
+    # Add order/user context
+    conversation_messages.append(
+        types.Content(
+            role="user",
+            parts=[
+                types.Part(
+                    text=(
+                        f"Context: This conversation is about "
+                        f"order #{order_id} and user #{user_id}."
+                    )
+                )
+            ]
+        )
+    )
 
+    while True:
 
-
-
-         # now send this conversation to LLM along with the user message and system prompt and tools so that it can understand the context of the conversation and give a reply accordingly
         response = client.models.generate_content(
-                model=model,
-                contents=conversation_messages,
-                config={
-                    "system_instruction": SUPPORT_SYSTEM_PROMPT,
-                    "max_output_tokens": 1024,
-                    "tools": [gemini_tools]
-                }
-            )
+            model=model,
+            contents=conversation_messages,
+            config={
+                "system_instruction": SUPPORT_SYSTEM_PROMPT,
+                "max_output_tokens": 1024,
+                "tools": [gemini_tools],
+            }
+        )
 
-        return response.text    
-            
+        # # print("RESPONSE:", response) for debugging purposes
+
+        # Check whether Gemini requested a tool
+        function_call = None
+
+        for part in response.candidates[0].content.parts: # loop through the parts of the response to check if any part contains a function call
+            if part.function_call:
+                function_call = part.function_call
+                break
+
+        # No function call -> final answer
+        if function_call is None:
+            return response.text
+
+        # Tool name
+        tool_name = function_call.name
+
+        # Tool arguments
+        tool_input = dict(function_call.args)
+
+        # print("TOOL:", tool_name) for debugging purposes
+        # print("INPUT:", tool_input)
+
+        # Execute Python function
+        tool_result = execute_tool(
+            tool_name,
+            tool_input
+        )
+
+        # # print("TOOL RESULT:", tool_result) for debugging purposes
+
+        # Add Gemini's function call to conversation
+        conversation_messages.append(
+            response.candidates[0].content
+        )
+
+        # Add tool result
+        conversation_messages.append(
+            types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_function_response(
+                        name=tool_name,
+                        response={
+                            "result": tool_result
+                        }
+                    )
+                ]
+            )
+        ) 
+                

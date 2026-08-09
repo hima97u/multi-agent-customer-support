@@ -24,7 +24,10 @@ def chat(request,order_id): # comig from order detail sendMessage() fxn
         Message.objects.create(conversation=conversation,role="user",content=user_message)
 
         # send user message and converstion to LLM 
-        reply = run_support_agent(user_message,conversation.id) # this will return the reply from LLM
+        reply = run_support_agent(user_message,conversation.id,order.id,request.user.id) # this will return the reply from LLM
+
+        # # print("REPLY:", repr(reply)) for debugging purposes
+        # # print("REPLY TYPE:", type(reply))
 
         # now we get the reply from user so we will store it as role="agent"
         Message.objects.create(conversation=conversation,role="agent",content=reply)

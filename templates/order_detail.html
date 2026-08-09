@@ -416,7 +416,7 @@
     input.disabled = true;
 
 
-    const typingTimeout = setTimeout(() => showTyping(), 1000); // show typing after 2 seconds
+    const typingTimeout = setTimeout(() => showTyping(), 1000); // show typing after 1  seconds
 
     // send message to django view
     try{
@@ -454,6 +454,10 @@
 
         input.disabled = false;
         input.focus(); // puts the cursor back inside the input box.
+    }finally{
+      clearTimeout(typingTimeout);
+      hideTyping();
+      input.disabled=false; 
     }
     
   }
