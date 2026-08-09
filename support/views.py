@@ -3,8 +3,9 @@ from django.shortcuts import render,get_object_or_404
 import json
 import time
 from orders.models import Order
+from support.agents import run_support_agent
 from .models import Conversation
-from .models import Message
+from support.models import Message
 
 def chat(request,order_id): # comig from order detail sendMessage() fxn
     if request.method == 'POST':
@@ -27,5 +28,7 @@ def chat(request,order_id): # comig from order detail sendMessage() fxn
 
         # now we get the reply from user so we will store it as role="agent"
         Message.objects.create(conversation=conversation,role="agent",content=reply)
+
+        
         time.sleep(6)
         return JsonResponse({"reply":"Here is the reply"})

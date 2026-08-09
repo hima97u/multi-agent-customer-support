@@ -1,9 +1,12 @@
+from decouple import config
 from google import genai
 from django.conf import settings
 from .tools import get_order_details , get_refund_history , check_delivery_status
+from .models import Message, Conversation,AgentLog
+from google.genai import types
 
-client = genai.client(api_key=settings.GEMINI_API_KEY)
-model = settings.MODEL_NAME
+client = genai.Client(api_key=settings.GEMINI_API_KEY)
+model = config("MODEL_NAME")
 
 
 
@@ -59,7 +62,7 @@ SUPPORT_TOOLS = [
     {
         "name": "get_order_details",
         "description": "Fetch complete order details including status, carrier, tracking number and days since order was placed. Use this when customer mentions their order or complains about delivery.",
-        "input_schema": {
+        "parameters": {
             "type": "object",
             "properties": {
                 "order_id": {
@@ -70,11 +73,10 @@ SUPPORT_TOOLS = [
             "required": ["order_id"]
         }
     },
-
     {
         "name": "get_refund_history",
         "description": "Get complete refund history for a user. Use this before making any refund related decisions.",
-        "input_schema": {
+        "parameters": {
             "type": "object",
             "properties": {
                 "user_id": {
@@ -85,11 +87,10 @@ SUPPORT_TOOLS = [
             "required": ["user_id"]
         }
     },
-
     {
         "name": "check_delivery_status",
-        "description": "Check current delivery status using tracking number and carrier. Use this when customer complains about delayed or missing delivery.",
-        "input_schema": {
+        "description": "Check current delivery status using tracking number and carrier.",
+        "parameters": {
             "type": "object",
             "properties": {
                 "tracking_number": {
@@ -98,14 +99,18 @@ SUPPORT_TOOLS = [
                 },
                 "carrier": {
                     "type": "string",
-                    "description": "The carrier name for example BlueDart or Delhivery or any carrier as per our database"
+                    "description": "The carrier name"
                 }
             },
             "required": ["tracking_number", "carrier"]
         }
-    },
+    }
 ]
 
+# This is the tool schema that will be passed to the LLM so that it can understand what tools are available and how to use them. The LLM will read this schema and decide which tool to use based on the user message and the context of the conversation.
+gemini_tools = types.Tool(
+    function_declarations=SUPPORT_TOOLS
+)
 
 # COMPONENT : 3 -> execute_tool() --> bridge b/w py funcns (or tools)
 
@@ -122,6 +127,30 @@ def execute_tool(tool_name , tool_input):
 
 
 # COMONENT : 4 -> agent loop --> while loop that loops untill the task is done
+
+def run_support_agent(user_message,conversation_id):
+    conv = Conversation.objects.get(id=conversation_id) # giving all the msgs under 1 conversation to LLM so that it can understand the context of the conversation
+
+
+    conversation_messages = []
+    for msg in conv.messages.order_by("created_at"):
+        conversation_messages.append({"role":msg.role,
+                                      "content":msg.content})
+
+         # now send this conversation to LLM along with the user message and system prompt and tools so that it can understand the context of the conversation and give a reply accordingly
+        response = client.models.generate_content(
+                model=model,
+                contents=conversation_messages,
+                config={
+                    "system_instruction": SUPPORT_SYSTEM_PROMPT,
+                    "max_output_tokens": 1024,
+                    "tools": [gemini_tools]
+                }
+            )
+
+        print("LLM response : ",response)
+            
+
 
 
 
