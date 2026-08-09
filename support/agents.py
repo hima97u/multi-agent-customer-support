@@ -138,10 +138,12 @@ def run_support_agent(user_message,conversation_id):
     for msg in conv.messages.order_by("created_at"):
         conversation_messages.append(
             types.Content(
-                role="model" if msg.role == "assistant" else "user",
-                parts=[types.Part(text=msg.content)]
+                    role="model" if msg.role == "assistant" else "user",
+                    parts=[
+                        types.Part(text=user_message)
+                    ]
             )
-        )
+)
 
 
 
@@ -160,9 +162,3 @@ def run_support_agent(user_message,conversation_id):
 
         print("LLM response : ",response)
             
-
-
-
-
-
-

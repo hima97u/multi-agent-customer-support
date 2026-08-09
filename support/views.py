@@ -30,5 +30,5 @@ def chat(request,order_id): # comig from order detail sendMessage() fxn
         Message.objects.create(conversation=conversation,role="agent",content=reply)
 
         
-        time.sleep(6)
-        return JsonResponse({"reply":"Here is the reply"})
+        # time.sleep(6) # now no need of sleep because we are not using streaming response, we are sending the reply after getting it from LLM so no need of sleep
+        return JsonResponse({"reply":reply})

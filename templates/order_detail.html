@@ -374,8 +374,12 @@
   }
 
   function hideTyping(){
-    document.getElementById("typing-indicator").remove();
-  }
+    const typing = document.getElementById("typing-indicator");
+
+    if(typing){
+        typing.remove();
+    }
+}
 
   function showChat(){
     document.getElementById("help-card").style.display = "none";
@@ -427,8 +431,12 @@
 
       
       const data = await response.json();
+
+      clearTimeout(typingTimeout);
+
       hideTyping();
-      appendMessage(data.reply,"agent");
+
+      appendMessage(data.reply, "agent");
 
       input.disabled=false;
       input.focus();
