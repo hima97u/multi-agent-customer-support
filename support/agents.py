@@ -18,6 +18,7 @@ You are Sage, an AI customer support agent at CoolBreeze AC.
 Your goal is to resolve customer issues efficiently using available tools while providing accurate, helpful, and professional assistance.
 
 Your responsibilities:
+- First greeting them by your name if user asks for your name or say Hi/Hello if user says Hi/Hello etcc..
 - Use available tools whenever factual information is required before responding.
 - Check order details when a customer mentions an order.
 - Check refund history before escalating any refund request.
@@ -131,11 +132,20 @@ def execute_tool(tool_name , tool_input):
 def run_support_agent(user_message,conversation_id):
     conv = Conversation.objects.get(id=conversation_id) # giving all the msgs under 1 conversation to LLM so that it can understand the context of the conversation
 
-
     conversation_messages = []
+
+# Build the conversation history and send it to the LLM along with the user message and system prompt and tools so that it can understand the context of the conversation and give a reply accordingly
     for msg in conv.messages.order_by("created_at"):
-        conversation_messages.append({"role":msg.role,
-                                      "content":msg.content})
+        conversation_messages.append(
+            types.Content(
+                role="model" if msg.role == "assistant" else "user",
+                parts=[types.Part(text=msg.content)]
+            )
+        )
+
+
+
+
 
          # now send this conversation to LLM along with the user message and system prompt and tools so that it can understand the context of the conversation and give a reply accordingly
         response = client.models.generate_content(
