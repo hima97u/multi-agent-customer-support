@@ -3,6 +3,8 @@
 from orders.models import Order, RefundRequest
 from django.utils import timezone
 
+from support.tracking_data import DELIVERY_DATA
+
 
 
 def get_order_details(order_id):
@@ -41,6 +43,8 @@ def get_refund_history(user_id):
     }
 
 
+
+
 def check_delivery_status(tracking_number, carrier):
     #This dictionary provides default values in case no tracking data is found for the given tracking number.
     #It indicates that the status is unknown and no tracking info is available.
@@ -51,7 +55,7 @@ def check_delivery_status(tracking_number, carrier):
         "estimated_delivery": "Contact carrier directly",
         "delay_reason": "No updates from carrier",
     }
-    result = DELIVERY_DATA.get(tracking_number, default_response)
+    result = DELIVERY_DATA.get(tracking_number, default_response) 
     result["tracking_number"] = tracking_number
     result["carrier"] = carrier
     return result

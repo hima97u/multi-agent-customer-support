@@ -56,7 +56,6 @@ Important rules:
 """
 
 
-
 # COMPONENT : 2 -> support tools --> tool schemas  , that AI agents will read to execute best suitable func. from tools.py
 
 

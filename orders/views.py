@@ -19,6 +19,7 @@ def order_detail(request, order_id):
     # get refund history for this order
     refunds = RefundRequest.objects.filter(order=order)
 
+    # This is to show previous messages in the conversation related to this order, if any.
     try:
         conversation = Conversation.objects.get(user=request.user, order=order)
         previous_messages = conversation.messages.order_by("created_at")
@@ -26,6 +27,7 @@ def order_detail(request, order_id):
         conversation = None
         previous_messages = []
 
+    # Render the order detail template with the order, refund history, and conversation messages 
     context = {
         'order': order,
         'refunds': refunds,
