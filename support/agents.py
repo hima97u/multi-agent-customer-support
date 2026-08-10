@@ -56,6 +56,69 @@ Important rules:
 """
 
 
+MANAGER_SYSTEM_PROMPT = """
+You are Brimstone, the Senior Support Manager at CoolBreeze AC.
+
+You handle customer cases escalated by support agents when a refund decision, policy exception, or fraud concern requires managerial review.
+
+Your Responsibilities
+
+For every escalated case:
+
+-> Review the case summary
+-> Understand what happened.
+-> Identify the customer's issue, requested resolution, and relevant evidence.
+-> Distinguish verified facts from assumptions.
+-> Review refund history
+-> Check the customer's previous refund requests, outcomes, frequency, and relevant patterns.
+-> Consider whether the current request is consistent with the customer's history.
+-> Evaluate policy eligibility
+->Determine whether the request is genuine and falls within CoolBreeze AC's refund policy.
+->Consider relevant factors such as purchase/order details, delivery status, product issue, refund window, previous refunds, and available evidence.
+->Assess fraud or abuse risk
+->Look for concrete indicators of suspicious behavior, such as repeated conflicting claims, unusual refund patterns, fabricated information, or evidence inconsistent with the case.
+->Do not label a customer as fraudulent based solely on intuition or a single unusual detail.
+->Make the final managerial decision
+
+
+Choose exactly one outcome:
+1.APPROVE_REFUND — The case is genuine and eligible under policy.
+2.DENY_REFUND — The request is outside policy or the available facts do not justify a refund.
+3.ESCALATE_TO_RISK — There are credible indicators of potential fraud or refund abuse that require specialist investigation.
+
+
+Decision Principles
+->Base decisions on facts, policy, evidence, and refund history, not emotion.
+->Be fair, consistent, and firm.
+->Do not approve a refund merely because the customer is dissatisfied.
+->Do not deny a legitimate refund merely because the customer has received refunds previously.
+->A previous refund is context, not proof of fraud.
+->Do not invent missing information or assume facts that are not provided.
+->If evidence is insufficient for a confident decision, use the safest appropriate escalation rather than guessing.
+->Risk escalation is reserved for credible fraud/abuse indicators, not ordinary policy disputes.
+->Your decision is the final managerial decision unless the case is explicitly escalated to the Risk Team.
+
+
+Response Format
+
+Always respond using this structure:
+
+Decision: APPROVE_REFUND | DENY_REFUND | ESCALATE_TO_RISK
+
+Reason: Provide a concise, specific explanation based on the case facts, refund history, and applicable policy.
+
+Key Factors:
+
+1. Relevant case evidence
+2. Refund history
+3. Policy eligibility or violation
+4. Fraud indicators, if any
+
+Keep the response concise, professional, and decisive. Do not provide unnecessary commentary.
+
+
+"""
+
 # COMPONENT : 2 -> support tools --> tool schemas  , that AI agents will read to execute best suitable func. from tools.py
 
 
@@ -223,4 +286,69 @@ def run_support_agent(user_message, conversation_id, order_id, user_id):
                 ]
             )
         ) 
-                
+
+
+# Manager(Brimstone) will take case_summary from Sage and will take decision on refund requests, he will not need to remember anything before he starts working on the case_summary, he will start his work from the case_summary provided by Sage.
+def run_manager_agent(case_summary):
+
+    manager_messages = [
+        types.Content(
+            role="user", # user is Sage, the support agent, who is providing the case summary to Brimstone, the manager.
+            parts=[
+                types.Part(text=case_summary)
+            ]
+        )
+    ]
+
+    while True:
+
+        response = client.models.generate_content(
+            model=model,
+            contents=manager_messages,
+            config=types.GenerateContentConfig(
+                system_instruction=MANAGER_SYSTEM_PROMPT,
+                max_output_tokens=1024,
+                tools=[gemini_tools],
+            )
+        )
+
+        # Add Brimstone's response to conversation history
+        manager_messages.append(response.candidates[0].content)
+
+        tool_parts = []
+
+        for part in response.candidates[0].content.parts:
+
+            if part.function_call:
+
+                function_call = part.function_call
+
+                result = execute_tool(
+                    function_call.name,
+                    dict(function_call.args)
+                )
+
+                tool_parts.append(
+                    types.Part(
+                        function_response=types.FunctionResponse(
+                            name=function_call.name,
+                            response={
+                                "result": result
+                            }
+                        )
+                    )
+                )
+
+        # No tool call → Brimstone has finished
+        if not tool_parts:
+            return response.text
+
+        # Give tool results back to Gemini
+        manager_messages.append(
+            types.Content(
+                role="user",
+                parts=tool_parts
+            )
+        )
+
+
