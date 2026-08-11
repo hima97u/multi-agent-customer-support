@@ -168,6 +168,21 @@ SUPPORT_TOOLS = [
             },
             "required": ["tracking_number", "carrier"]
         }
+    },
+
+     {
+        "name": "escalate_to_manager",
+        "description": "Escalate the case to the manager for a refund decision. Use this when customer requests a refund or compensation. Prepare a detailed case summary including order details, refund history and customer complaint before escalating.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "case_summary": {
+                    "type": "string",
+                    "description": "Complete case summary including order details, refund history and customer complaint"
+                }
+            },
+            "required": ["case_summary"]
+        }
     }
 ]
 
@@ -175,6 +190,9 @@ SUPPORT_TOOLS = [
 gemini_tools = types.Tool(
     function_declarations=SUPPORT_TOOLS
 )
+
+
+
 
 # COMPONENT : 3 -> execute_tool() --> bridge b/w py funcns (or tools)
 
@@ -187,6 +205,15 @@ def execute_tool(tool_name , tool_input):
     
     if tool_name == "check_delivery_status":
         return check_delivery_status(tool_input["tracking_number"], tool_input["carrier"])
+
+    if tool_name == "escalate_to_manager":
+        case_summary = tool_input["case_summary"]
+
+        print("Escalating to Brimstone ===>", case_summary) # to see the escalated case summary in the console for debugging purposes by Sage, the support agent.
+
+        manager_decision = run_manager_agent(case_summary)
+
+        print("Brimstone decision ===>", manager_decision) # to see the decision made by Brimstone, the manager
 
 
 
@@ -350,5 +377,6 @@ def run_manager_agent(case_summary):
                 parts=tool_parts
             )
         )
+
 
 
