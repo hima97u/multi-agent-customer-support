@@ -1,0 +1,172 @@
+[
+  {
+    "model": "auth.user",
+    "pk": 16,
+    "fields": {
+      "username": "fraud_sample",
+      "email": "fraud.sample@gmail.com",
+      "first_name": "Alice",
+      "last_name": "Smith",
+      "is_staff": false,
+      "is_superuser": false,
+      "is_active": true,
+      "password": "qwerty@123",
+      "date_joined": "2024-01-01T00:00:00Z",
+      "last_login": null,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "orders.order",
+    "pk": 27,
+    "fields": {
+      "user": 16,
+      "product": 6,
+      "product_name": "CoolBreeze 2 Ton 4 Star Inverter Cassette AC",
+      "amount": "68999.00",
+      "status": "delivered",
+      "carrier": "DHL",
+      "tracking_number": "DHL00000000",
+      "delivery": "50, Cyber City, Gurgaon - 122001",
+      "created_at": "2025-02-10T10:00:00Z",
+      "updated_at": "2025-02-10T10:00:00Z"
+    }
+  },
+  {
+    "model": "orders.order",
+    "pk": 28,
+    "fields": {
+      "user": 16,
+      "product": 7,
+      "product_name": "CoolBreeze 1.5 Ton Portable AC",
+      "amount": "32999.00",
+      "status": "dispatched",
+      "carrier": "FedEx",
+      "tracking_number": "FX99999999",
+      "delivery": "50, Cyber City, Gurgaon - 122001",
+      "created_at": "2025-02-15T11:00:00Z",
+      "updated_at": "2025-02-15T11:00:00Z"
+    }
+  },
+  {
+    "model": "orders.order",
+    "pk": 29,
+    "fields": {
+      "user": 16,
+      "product": 8,
+      "product_name": "CoolBreeze 2 Ton Tower AC",
+      "amount": "55999.00",
+      "status": "pending",
+      "carrier": "",
+      "tracking_number": "",
+      "delivery": "50, Cyber City, Gurgaon - 122001",
+      "created_at": "2025-02-20T12:00:00Z",
+      "updated_at": "2025-02-20T12:00:00Z"
+    }
+  },
+  {
+    "model": "orders.order",
+    "pk": 30,
+    "fields": {
+      "user": 16,
+      "product": 5,
+      "product_name": "CoolBreeze 1 Ton 5 Star Inverter Split AC",
+      "amount": "38999.00",
+      "status": "delivered",
+      "carrier": "DHL",
+      "tracking_number": "DHL11111111",
+      "delivery": "50, Cyber City, Gurgaon - 122001",
+      "created_at": "2025-02-25T13:00:00Z",
+      "updated_at": "2025-02-25T13:00:00Z"
+    }
+  },
+  {
+    "model": "orders.refundrequest",
+    "pk": 17,
+    "fields": {
+      "order": 27,
+      "user": 16,
+      "reason": "AC stopped working after 1 day",
+      "status": "approved",
+      "created_at": "2025-02-28T10:00:00Z"
+    }
+  },
+  {
+    "model": "orders.refundrequest",
+    "pk": 18,
+    "fields": {
+      "order": 27,
+      "user": 16,
+      "reason": "Wrong product delivered",
+      "status": "denied",
+      "created_at": "2025-03-05T10:00:00Z"
+    }
+  },
+  {
+    "model": "orders.refundrequest",
+    "pk": 19,
+    "fields": {
+      "order": 28,
+      "user": 16,
+      "reason": "AC making loud noise",
+      "status": "denied",
+      "created_at": "2025-03-12T10:00:00Z"
+    }
+  },
+  {
+    "model": "orders.refundrequest",
+    "pk": 20,
+    "fields": {
+      "order": 28,
+      "user": 16,
+      "reason": "Product not as described",
+      "status": "denied",
+      "created_at": "2025-03-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "orders.refundrequest",
+    "pk": 21,
+    "fields": {
+      "order": 29,
+      "user": 16,
+      "reason": "AC not cooling properly",
+      "status": "approved",
+      "created_at": "2025-03-20T10:00:00Z"
+    }
+  },
+  {
+    "model": "orders.refundrequest",
+    "pk": 22,
+    "fields": {
+      "order": 30,
+      "user": 16,
+      "reason": "Received damaged product",
+      "status": "denied",
+      "created_at": "2025-03-25T10:00:00Z"
+    }
+  },
+  {
+    "model": "orders.refundrequest",
+    "pk": 23,
+    "fields": {
+      "order": 29,
+      "user": 16,
+      "reason": "Want to return — changed my mind",
+      "status": "pending",
+      "created_at": "2025-04-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "orders.refundrequest",
+    "pk": 24,
+    "fields": {
+      "order": 30,
+      "user": 16,
+      "reason": "AC compressor not working",
+      "status": "pending",
+      "created_at": "2025-04-05T10:00:00Z"
+    }
+  }
+]
