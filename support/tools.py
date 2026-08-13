@@ -59,3 +59,40 @@ def check_delivery_status(tracking_number, carrier):
     result["tracking_number"] = tracking_number
     result["carrier"] = carrier
     return result
+
+
+# this is for C ypher AI agent to get customer risk profile based on refund history and order history to give verdict to Brimstone(the manager)
+def get_customer_risk_profile(user_id):
+    refunds = RefundRequest.objects.filter(user_id=user_id)
+    orders = Order.objects.filter(user_id=user_id)
+
+    # how many refund request does this user does (90 days [or any company policy])
+    recent_refunds = refunds.filter(created_at__gte=timezone.now() - timezone.timedelta(days=90)).count()
+
+    # how many orders are denied for all long time (or any company policy)
+    denied = refunds.filter(status="denied").count()
+    approved = refunds.filter(status="approved").count()
+    pending = refunds.filter(status="pending").count()
+
+    total_orders = orders.count()
+    total_refunds = refunds.count()
+
+    if total_orders > 0:
+        refund_to_order_ratio = round(total_refunds / total_orders , 2)
+    else:
+        refund_to_order_ratio = 0
+
+
+
+    return {
+        "user_id": user_id,
+        "total_orders": total_orders,
+        "total_refunds": total_refunds,
+        "recent_refunds_last_90_days": recent_refunds,
+        "refund_to_order_ratio": refund_to_order_ratio,
+        "denied_refunds": denied,
+        "approved_refunds": approved,
+        "pending_refunds": pending,
+    }
+
+    
