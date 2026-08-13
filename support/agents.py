@@ -214,6 +214,27 @@ SUPPORT_TOOLS = [
     }
 ]
 
+
+
+
+RISK_TOOLS = [
+    {
+        "name": "get_customer_risk_profile",
+        "description": "Get complete risk profile for a customer including order history, refund patterns and ratio. Use this to assess fraud risk.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "integer",
+                    "description": "The user ID to assess risk for"
+                }
+            },
+            "required": ["user_id"]
+        }
+    }
+]
+
+
 # This is the tool schema that will be passed to the LLM so that it can understand what tools are available and how to use them. The LLM will read this schema and decide which tool to use based on the user message and the context of the conversation.
 gemini_tools = types.Tool(
     function_declarations=SUPPORT_TOOLS
