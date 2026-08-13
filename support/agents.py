@@ -1,7 +1,7 @@
 from decouple import config
 from google import genai
 from django.conf import settings
-from .tools import get_order_details , get_refund_history , check_delivery_status
+from .tools import get_customer_risk_profile, get_order_details , get_refund_history , check_delivery_status
 from .models import Message, Conversation,AgentLog
 from google.genai import types
 
@@ -53,6 +53,8 @@ Important rules:
 - If a request is outside your capabilities, politely explain your limitation and offer the closest available assistance.
 - Never use bold text, bullet points, markdown formatting, or emojis in customer-facing replies.
 - Keep replies concise and conversational, ideally within 3–4 sentences.
+
+MOST IMPORTANR : always give reply in lines like a human support agent would do, do not give reply in paragraph form, always give reply in lines, and always keep your reply concise and to the point, do not give long replies, do not give unnecessary information, do not give irrelevant information, do not give information that is not required by the customer.
 """
 
 
@@ -221,7 +223,7 @@ RISK_TOOLS = [
     {
         "name": "get_customer_risk_profile",
         "description": "Get complete risk profile for a customer including order history, refund patterns and ratio. Use this to assess fraud risk.",
-        "input_schema": {
+            "parameters": {
             "type": "object",
             "properties": {
                 "user_id": {
@@ -235,10 +237,55 @@ RISK_TOOLS = [
 ]
 
 
+MANAGER_TOOLS = [
+    {
+        "name": "assess_fraud_risk",
+        "description": "Consult the risk agent to assess fraud risk for a customer. Use this when refund request looks suspicious or customer has multiple refund requests. Pass the user_id to get a risk verdict.",
+            "parameters": {
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "integer",
+                    "description": "The user ID to assess fraud risk for"
+                }
+            },
+            "required": ["user_id"]
+        }
+    }
+]
+
+
+
 # This is the tool schema that will be passed to the LLM so that it can understand what tools are available and how to use them. The LLM will read this schema and decide which tool to use based on the user message and the context of the conversation.
 gemini_tools = types.Tool(
     function_declarations=SUPPORT_TOOLS
 )
+
+gemini_tools_for_manager_agent = types.Tool(
+    function_declarations=MANAGER_TOOLS
+)
+
+gemini_tools_for_risk_agent = types.Tool(
+    function_declarations=RISK_TOOLS
+)
+
+def debug_print(agent_name, message, payload=None):
+    if payload is None:
+        print(f"[{agent_name}] {message}")
+    else:
+        print(f"[{agent_name}] {message}: {payload}")
+
+
+def debug_io(agent_name, function_name, tool_input=None, tool_output=None):
+    if tool_input is not None:
+        print(f"[{agent_name}] {function_name} input: {tool_input}")
+    if tool_output is not None:
+        print(f"[{agent_name}] {function_name} output: {tool_output}")
+
+
+def debug_handoff(from_agent, to_agent, payload):
+    print(f"[{from_agent} -> {to_agent}] prompt: {payload}")
+
 
 
 
@@ -246,24 +293,45 @@ gemini_tools = types.Tool(
 # COMPONENT : 3 -> execute_tool() --> bridge b/w py funcns (or tools)
 
 def execute_tool(tool_name , tool_input):
+    debug_io("TOOL", tool_name, tool_input=tool_input)
+
     if tool_name == "get_order_details":
-        return get_order_details(tool_input["order_id"])
+        result = get_order_details(tool_input["order_id"])
+        debug_io("TOOL", tool_name, tool_output=result)
+        return result
     
     if tool_name == "get_refund_history":
-        return get_refund_history(tool_input["user_id"])
+        result = get_refund_history(tool_input["user_id"])
+        debug_io("TOOL", tool_name, tool_output=result)
+        return result
     
     if tool_name == "check_delivery_status":
-        return check_delivery_status(tool_input["tracking_number"], tool_input["carrier"])
+        result = check_delivery_status(tool_input["tracking_number"], tool_input["carrier"])
+        debug_io("TOOL", tool_name, tool_output=result)
+        return result
 
     if tool_name == "escalate_to_manager":
         case_summary = tool_input["case_summary"]
 
-        print("Escalating to Brimstone ===>", case_summary) # to see the escalated case summary in the console for debugging purposes by Sage, the support agent.
+        debug_handoff("SUPPORT", "MANAGER", case_summary)
 
         manager_decision = run_manager_agent(case_summary)
 
-        print("Brimstone decision ===>", manager_decision) # to see the decision made by Brimstone, the manager
+        debug_io("TOOL", tool_name, tool_output=manager_decision)
 
+        return manager_decision
+
+    if tool_name == "assess_fraud_risk":
+        user_id = tool_input["user_id"]
+        debug_handoff("MANAGER", "RISK", user_id)
+        verdict = run_risk_agent(user_id)
+        debug_io("TOOL", tool_name, tool_output=verdict)
+        return verdict
+
+    if tool_name == "get_customer_risk_profile":
+        result = get_customer_risk_profile(tool_input["user_id"])
+        debug_io("TOOL", tool_name, tool_output=result)
+        return result
 
 
 # COMONENT : 4 -> agent loop --> while loop that loops untill the task is done
@@ -271,6 +339,13 @@ def execute_tool(tool_name , tool_input):
 def run_support_agent(user_message, conversation_id, order_id, user_id):
 
     conv = Conversation.objects.get(id=conversation_id)
+
+    debug_io("SUPPORT", "run_support_agent", tool_input={
+        "user_message": user_message,
+        "conversation_id": conversation_id,
+        "order_id": order_id,
+        "user_id": user_id,
+    })
 
     conversation_messages = []
 
@@ -305,14 +380,12 @@ def run_support_agent(user_message, conversation_id, order_id, user_id):
         response = client.models.generate_content(
             model=model,
             contents=conversation_messages,
-            config={
-                "system_instruction": SUPPORT_SYSTEM_PROMPT,
-                "max_output_tokens": 1024,
-                "tools": [gemini_tools],
-            }
+            config=types.GenerateContentConfig(
+                system_instruction=SUPPORT_SYSTEM_PROMPT,
+                max_output_tokens=1024,
+                tools=[gemini_tools],
+            )
         )
-
-        # # print("RESPONSE:", response) for debugging purposes
 
         # Check whether Gemini requested a tool
         function_call = None
@@ -332,8 +405,7 @@ def run_support_agent(user_message, conversation_id, order_id, user_id):
         # Tool arguments
         tool_input = dict(function_call.args)
 
-        # print("TOOL:", tool_name) for debugging purposes
-        # print("INPUT:", tool_input)
+        debug_io("SUPPORT", tool_name, tool_input=tool_input)
 
         # Execute Python function
         tool_result = execute_tool(
@@ -341,7 +413,7 @@ def run_support_agent(user_message, conversation_id, order_id, user_id):
             tool_input
         )
 
-        # # print("TOOL RESULT:", tool_result) for debugging purposes
+        debug_io("SUPPORT", tool_name, tool_output=tool_result)
 
         # Add Gemini's function call to conversation
         conversation_messages.append(
@@ -367,6 +439,8 @@ def run_support_agent(user_message, conversation_id, order_id, user_id):
 # Manager(Brimstone) will take case_summary from Sage and will take decision on refund requests, he will not need to remember anything before he starts working on the case_summary, he will start his work from the case_summary provided by Sage.
 def run_manager_agent(case_summary):
 
+    debug_handoff("SUPPORT", "MANAGER", case_summary)
+
     manager_messages = [
         types.Content(
             role="user", # user is Sage, the support agent, who is providing the case summary to Brimstone, the manager.
@@ -384,7 +458,7 @@ def run_manager_agent(case_summary):
             config=types.GenerateContentConfig(
                 system_instruction=MANAGER_SYSTEM_PROMPT,
                 max_output_tokens=1024,
-                tools=[gemini_tools],
+                tools=[gemini_tools_for_manager_agent],
             )
         )
 
@@ -399,10 +473,16 @@ def run_manager_agent(case_summary):
 
                 function_call = part.function_call
 
+                tool_input = dict(function_call.args)
+
+                debug_io("MANAGER", function_call.name, tool_input=tool_input)
+
                 result = execute_tool(
                     function_call.name,
-                    dict(function_call.args)
+                    tool_input
                 )
+
+                debug_io("MANAGER", function_call.name, tool_output=result)
 
                 tool_parts.append(
                     types.Part(
@@ -432,3 +512,62 @@ def run_manager_agent(case_summary):
 ### UPTO THIS MANAGER IS GIVING ANSWER TO SAGE ACCORDING TO CASE SUMMARY WHICH IS GIVEN BY SAGE TO BRIMSTONE
 
 
+def run_risk_agent(user_id):
+    debug_handoff("MANAGER", "RISK", user_id)
+
+    risk_messages = [
+        types.Content(
+            role="user",
+            parts=[
+                types.Part(
+                    text=(
+                        f"Please assess the fraud risk for user ID {user_id}. "
+                        "Use your tool to get their profile and return a verdict."
+                    )
+                )
+            ]
+        )
+    ]
+
+    while True:
+        response = client.models.generate_content(
+            model=model,
+            contents=risk_messages,
+            config=types.GenerateContentConfig(
+                system_instruction=RISK_SYSTEM_PROMPT,
+                max_output_tokens=1024,
+                tools=[gemini_tools_for_risk_agent],
+            )
+        )
+
+        tool_parts = []
+        for part in response.candidates[0].content.parts:
+            if part.function_call:
+                function_call = part.function_call
+
+                tool_input = dict(function_call.args)
+
+                debug_io("RISK", function_call.name, tool_input=tool_input)
+
+                result = execute_tool(function_call.name, tool_input)
+
+                debug_io("RISK", function_call.name, tool_output=result)
+                tool_parts.append(
+                    types.Part(
+                        function_response=types.FunctionResponse(
+                            name=function_call.name,
+                            response={"result": result}
+                        )
+                    )
+                )
+
+        if not tool_parts:
+            return response.text
+
+        risk_messages.append(response.candidates[0].content)
+        risk_messages.append(
+            types.Content(
+                role="user",
+                parts=tool_parts
+            )
+        )
