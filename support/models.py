@@ -12,6 +12,16 @@ class Conversation(models.Model):
     def __str__(self):
         return f"Conversation #{self.id} - {self.user.username} / Order #{self.order.id}"
     
+    @property # to be treaded as a field of conversation model, so we can access it like conversation.manager_involvement instead of conversation.manager_involvement() in templates
+    def manager_involvement(self):
+        # this is reverse lookup to check if there is any manager involvement in the conversation or not
+        return self.agentlogs.filter(event_type="manager").exists()
+
+
+    @property # to be treaded as a field of conversation model, so we can access it like conversation.risk_assessment_involvement instead of conversation.risk_assessment_involvement() in templates
+    def risk_assessment_involvement(self):
+        # this is reverse lookup to check if there is any risk assessment involvement in the conversation or not
+        return self.agentlogs.filter(event_type="risk").exists()
 
 class Message(models.Model):
     ROLE_CHOICES = [

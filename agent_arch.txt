@@ -1,39 +1,32 @@
-                    CUSTOMER
-                       │
-                       ▼
-                  ┌─────────┐
-                  │   Sage  │
-                  └────┬────┘
-                       │
-             ┌─────────┴─────────┐
-             │                   │
-          Tools              Escalation
-             │                   │
-             ▼                   ▼
-        Order/Refund       ┌───────────┐
-        Delivery           │ Brimstone │
-                           └─────┬─────┘
-                                 │
-                           Fraud concern
-                                 │
-                                 ▼
-                            ┌─────────┐
-                            │ Cypher  │
-                            └─────────┘
-
-       
-       
-       
-              ALL EVENTS
-                  │
-                  ▼
-             ┌──────────┐
-             │ AgentLog │
-             └─────┬────┘
-                   │
-                WebSocket
-                   │
-                   ▼
-          ┌─────────────────┐
-          │ React Dashboard │
-          └─────────────────┘
+                       CUSTOMER
+                           │
+                           ▼
+                    ┌────────────┐
+                    │    Sage    │
+                    └─────┬──────┘
+                          │
+         ┌────────────────────┼────────────────────┐
+         │                    │                    │
+         │                    │                    │
+   Tools / API           Escalate           Fraud review
+         │                    │                    │
+         ▼                    ▼                    ▼
+  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+  │ Order        │    │ Brimstone    │    │ Cypher       │
+  │ Refund       │    │ Fraud Agent  │--->│ Resolution   │
+  │ Delivery     │    └──────┬───────┘    └──────┬───────┘
+  └──────────────┘           │                    │
+                             └──────────┬─────────┘
+                                        │
+                                        ▼
+                                  ┌────────────┐
+                                  │  AgentLog  │
+                                  └──────┬─────┘
+                                         │
+                                         ▼
+                               WebSocket / Event Stream
+                                         │
+                                         ▼
+                              ┌──────────────────────┐
+                              │ React Dashboard      │ this Dashboard will be only for staff users
+                              └──────────────────────┘

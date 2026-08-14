@@ -6,6 +6,7 @@ from orders.models import Order
 from support.agents import run_support_agent
 from .models import Conversation
 from support.models import Message
+from django.contrib.admin.views.decorators import staff_member_required
 
 def chat(request,order_id): # comig from order detail sendMessage() fxn
     if request.method == 'POST':
@@ -35,3 +36,29 @@ def chat(request,order_id): # comig from order detail sendMessage() fxn
         
         # time.sleep(6) # now no need of sleep because we are not using streaming response, we are sending the reply after getting it from LLM so no need of sleep
         return JsonResponse({"reply":reply})
+
+
+
+@staff_member_required
+def dashboard(request):
+    conversations = Conversation.objects.all().order_by("-created_at")
+    print('conversations===>', conversations)
+    context = {
+        'conversations': conversations,
+    }
+    return render(request, "support/dashboard.html", context)
+
+
+@staff_member_required
+def conversation_detail(request, conversation_id):
+    conversation = get_object_or_404(Conversation, id=conversation_id)
+    messages = conversation.messages.order_by("created_at")
+    agentlogs = conversation.agentlogs.order_by("created_at")
+
+    context = {
+        "conversation": conversation,
+        "messages": messages,
+        "agentlogs": agentlogs
+    }
+    return render(request, "support/conversation_detail.html", context)
+    
