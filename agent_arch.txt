@@ -1,0 +1,39 @@
+                    CUSTOMER
+                       │
+                       ▼
+                  ┌─────────┐
+                  │   Sage  │
+                  └────┬────┘
+                       │
+             ┌─────────┴─────────┐
+             │                   │
+          Tools              Escalation
+             │                   │
+             ▼                   ▼
+        Order/Refund       ┌───────────┐
+        Delivery           │ Brimstone │
+                           └─────┬─────┘
+                                 │
+                           Fraud concern
+                                 │
+                                 ▼
+                            ┌─────────┐
+                            │ Cypher  │
+                            └─────────┘
+
+       
+       
+       
+              ALL EVENTS
+                  │
+                  ▼
+             ┌──────────┐
+             │ AgentLog │
+             └─────┬────┘
+                   │
+                WebSocket
+                   │
+                   ▼
+          ┌─────────────────┐
+          │ React Dashboard │
+          └─────────────────┘

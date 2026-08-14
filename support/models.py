@@ -25,9 +25,11 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.role}: {self.content[:50]}" # Agent: We are checking your request, please wait...
+
     
 
 class AgentLog(models.Model):
+    # These event types are the dashboard audit trail for the 3 agents plus their tool activity.
     EVENT_CHOICES = [
         ("support", "Support Agent"),
         ("tool_call", "Tool Call"),
