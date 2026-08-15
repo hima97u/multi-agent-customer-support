@@ -62,3 +62,5 @@ def conversation_detail(request, conversation_id):
     }
     return render(request, "support/conversation_detail.html", context)
     
+
+# Testing GitHub Actions CI
