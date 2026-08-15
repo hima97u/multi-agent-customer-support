@@ -10,6 +10,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      DEBUG: ${{ vars.DEBUG }}
+      MODEL_NAME: ${{ vars.MODEL_NAME }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
