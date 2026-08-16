@@ -1,204 +1,897 @@
 {% extends "support/dashboard_base.html" %}
 
 {% block content %}
-      <!-- Header -->
-      <div class="d-flex align-items-center gap-3 mb-4">
-        <a href="{% url 'dashboard' %}" class="text-muted text-decoration-none" style="font-size:13px;">← Back</a>
-        <h5 class="fw-bold mb-0">Conversation #{{ conversation.id }}</h5>
-        <span class="text-muted" style="font-size:13px;">{{ conversation.user.first_name }} {{ conversation.user.last_name }} · Order #{{ conversation.order.id }} · {{ conversation.order.product_name }}</span>
-      </div>
 
-      <!-- Two Column Layout -->
-      <div class="row g-3" style="height:calc(100vh - 160px);">
+<style>
 
-        <!-- Left: Chat Transcript -->
-        <div class="col-md-6" style="max-height: calc(100vh - 150px);">
-          <div class="card h-100">
-            <div class="card-header fw-semibold" style="font-size:13px;">
-              Chat Transcript
-            </div>
-            <div class="card-body overflow-auto d-flex flex-column gap-3" id="chat-transcript">
+  /* ================= HEADER ================= */
 
-              {% for msg in messages %}
-              {% if msg.role == "user" %}
-                <!-- Customer message -->
-              <div>
-                <div style="font-size:11px;color:#adb5bd;margin-bottom:3px;">{{ conversation.user.first_name }}</div>
-                <div class="bg-light rounded p-2 px-3" style="font-size:13px;max-width:85%;">
-                  {{ msg.content }}
-                </div>
-              </div>
-              {% else %}
-              <!-- Agent message -->
-              <div class="text-end">
-                <div style="font-size:11px;color:#adb5bd;margin-bottom:3px;">Maya (AI Agent)</div>
-                <div class="rounded p-2 px-3 d-inline-block text-start" 
-                     style="font-size:13px;max-width:85%;background:#ede9fe;color:#3C3489;">
-                  {{ msg.content }}
-                </div>
-              </div>
-              {% endif %}
-            {% endfor %}
+  .conversation-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
 
-              
+  .back-btn {
+    color: #8b949e;
+    text-decoration: none;
+    font-size: 12px;
+    padding: 6px 9px;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    background: #161b22;
+    transition: 0.2s;
+  }
 
-              
+  .back-btn:hover {
+    color: #58a6ff;
+    border-color: #58a6ff;
+  }
 
-            </div>
-          </div>
-        </div>
+  .conversation-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin: 0;
+    color: #f0f6fc;
+  }
 
-        <!-- Right: Agent Activity -->
-        <div class="col-md-6" style="max-height: calc(100vh - 150px);">
-          <div class="card h-100">
-            <div class="card-header d-flex align-items-center gap-2" style="font-size:13px;">
-              <div style="width:8px;height:8px;border-radius:50%;background:#1D9E75;"></div>
-              <span class="fw-semibold">Agent Activity</span>
-            </div>
-            <div class="card-body overflow-auto" id="agent-activity">
+  .conversation-meta {
+    color: #8b949e;
+    font-size: 11px;
+  }
 
-              <!-- Log entry -->
-               {% for log in agentlogs %}
-              <div>
-                <div class="d-flex align-items-center gap-2 mb-1">
-                {% if log.event_type == "tool_call" %}
-                  <span class="badge bg-primary mb-1" style="font-size:10px;">tool_call</span>
-                {% elif log.event_type == "tool_result" %}
-                  <span class="badge bg-secondary mb-1" style="font-size:10px;">tool_result</span>
-                {% elif log.event_type == "manager" %}
-                  <span class="badge bg-warning text-dark mb-1" style="font-size:10px;">manager</span>
-                {% elif log.event_type == "risk" %}
-                    <span class="badge bg-danger mb-1" style="font-size:10px;">risk</span>
-                {% else %}
-                    <span class="badge bg-success mb-1" style="font-size:10px;">final</span>
-                {% endif %}
-                  <span class="text-muted" style="font-size:11px;">{{ log.created_at | date:"h:i A" }}</span>
-                </div>
-                <p class="mb-0 text-muted" style="font-size:12px;">{{ log.message }}</p>
-              </div>
+  .header-divider {
+    color: #30363d;
+  }
 
-              {% endfor %}
+  /* ================= LIVE ================= */
 
-              
-            </div>
-          </div>
-        </div>
+  .live-status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid #30363d;
+    background: #161b22;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: #8b949e;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
 
-      </div>
+  .live-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #3fb950;
+    box-shadow: 0 0 9px rgba(63, 185, 80, 0.8);
+  }
 
-  <script>
+  /* ================= LAYOUT ================= */
 
-    function appendMessage(role, name, message){
-      const chatTranscript = document.getElementById("chat-transcript");
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    height: calc(100vh - 145px);
+    min-height: 500px;
+  }
 
-      if(role == "user"){
-        chatTranscript.insertAdjacentHTML("beforeend", `
-          <div>
-              <div style="font-size:11px;color:#adb5bd;margin-bottom:3px;">${name}</div>
-              <div class="bg-light rounded p-2 px-3" style="font-size:13px;max-width:85%;">
-              ${message}
-              </div>
-          </div>
-        `);
-      } else{
-        chatTranscript.insertAdjacentHTML("beforeend", `
-          <div class="text-end">
-              <div style="font-size:11px;color:#adb5bd;margin-bottom:3px;">${name} (AI Agent)</div>
-              <div class="rounded p-2 px-3 d-inline-block text-start" 
-                    style="font-size:13px;max-width:85%;background:#ede9fe;color:#3C3489;">
-                    ${message}
-              </div>
-          </div>
-        `);
-      }
+  .panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.18);
+  }
 
-      chatTranscript.scrollTop = chatTranscript.scrollHeight;
+  /* ================= PANEL HEADER ================= */
+
+  .panel-header {
+    min-height: 48px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #30363d;
+    background: #161b22;
+  }
+
+  .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #f0f6fc;
+  }
+
+  .panel-icon {
+    width: 25px;
+    height: 25px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #21262d;
+    font-size: 12px;
+  }
+
+  .panel-count {
+    color: #8b949e;
+    font-size: 10px;
+  }
+
+  /* ================= CHAT ================= */
+
+  #chat-transcript {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .message-wrapper {
+    width: 100%;
+  }
+
+  .message-name {
+    font-size: 10px;
+    color: #8b949e;
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+
+  .user-message {
+    display: inline-block;
+    max-width: 82%;
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #e6edf3;
+    padding: 9px 12px;
+    border-radius: 7px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .agent-wrapper {
+    text-align: right;
+  }
+
+  .agent-message {
+    display: inline-block;
+    max-width: 82%;
+    text-align: left;
+    background: rgba(188, 140, 255, 0.10);
+    border: 1px solid rgba(188, 140, 255, 0.25);
+    color: #d8b9ff;
+    padding: 9px 12px;
+    border-radius: 7px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .agent-name {
+    color: #bc8cff;
+  }
+
+  /* ================= ACTIVITY ================= */
+
+  #agent-activity {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: #0d1117;
+  }
+
+  .activity-entry {
+    position: relative;
+    padding: 0 0 18px 18px;
+    border-left: 1px solid #30363d;
+    margin-left: 4px;
+  }
+
+  .activity-entry:last-child {
+    border-left-color: transparent;
+  }
+
+  .activity-dot {
+    position: absolute;
+    left: -4px;
+    top: 2px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #8b949e;
+  }
+
+  .activity-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+
+  .activity-time {
+    color: #6e7681;
+    font-size: 9px;
+    font-family: monospace;
+  }
+
+  .activity-message {
+    color: #8b949e;
+    font-size: 11px;
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  /* ================= EVENT BADGES ================= */
+
+  .event-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-family: monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+
+  .event-tool-call {
+    color: #58a6ff;
+    background: rgba(88, 166, 255, 0.12);
+    border: 1px solid rgba(88, 166, 255, 0.22);
+  }
+
+  .event-tool-result {
+    color: #8b949e;
+    background: rgba(139, 148, 158, 0.10);
+    border: 1px solid rgba(139, 148, 158, 0.20);
+  }
+
+  .event-manager {
+    color: #d29922;
+    background: rgba(210, 153, 34, 0.12);
+    border: 1px solid rgba(210, 153, 34, 0.22);
+  }
+
+  .event-risk {
+    color: #f85149;
+    background: rgba(248, 81, 73, 0.12);
+    border: 1px solid rgba(248, 81, 73, 0.22);
+  }
+
+  .event-final {
+    color: #3fb950;
+    background: rgba(63, 185, 80, 0.12);
+    border: 1px solid rgba(63, 185, 80, 0.22);
+  }
+
+  /* ================= SPINNER ================= */
+
+  .agent-thinking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #8b949e;
+    font-size: 10px;
+    padding: 8px 0 0 18px;
+  }
+
+  .thinking-dots {
+    display: flex;
+    gap: 3px;
+  }
+
+  .thinking-dots span {
+    width: 4px;
+    height: 4px;
+    background: #8b949e;
+    border-radius: 50%;
+    animation: pulse 1.2s infinite;
+  }
+
+  .thinking-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .thinking-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 0.25;
     }
 
-    function showSpinner(){
-      document.getElementById("agent-activity").insertAdjacentHTML("beforeend", 
-        `<div class="spinner-border spinner-border-sm" id="agent-spinner" role="status"></div>`
+    50% {
+      opacity: 1;
+    }
+  }
+
+  /* ================= RESPONSIVE ================= */
+
+  @media (max-width: 900px) {
+
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+
+    .panel {
+      min-height: 500px;
+    }
+
+    .live-status {
+      display: none;
+    }
+  }
+
+</style>
+
+
+<!-- ================= HEADER ================= -->
+
+<div class="conversation-header">
+
+  <a
+    href="{% url 'dashboard' %}"
+    class="back-btn"
+  >
+    ← Back
+  </a>
+
+  <div>
+
+    <h5 class="conversation-title">
+      Conversation #{{ conversation.id }}
+    </h5>
+
+    <div class="conversation-meta">
+
+      {{ conversation.user.first_name }}
+      {{ conversation.user.last_name }}
+
+      <span class="header-divider"> · </span>
+
+      Order #{{ conversation.order.id }}
+
+      <span class="header-divider"> · </span>
+
+      {{ conversation.order.product_name }}
+
+    </div>
+
+  </div>
+
+
+  <div class="live-status">
+
+    <span class="live-status-dot"></span>
+
+    <span>
+      Live
+    </span>
+
+  </div>
+
+</div>
+
+
+<!-- ================= TWO COLUMN DASHBOARD ================= -->
+
+<div class="dashboard-grid">
+
+
+  <!-- ========================================= -->
+  <!-- LEFT : CHAT TRANSCRIPT -->
+  <!-- ========================================= -->
+
+  <div class="panel">
+
+    <div class="panel-header">
+
+      <div class="panel-title">
+
+        <div class="panel-icon">
+          💬
+        </div>
+
+        <span>
+          Chat Transcript
+        </span>
+
+      </div>
+
+      <span class="panel-count">
+        Customer ↔ Agent
+      </span>
+
+    </div>
+
+
+    <div
+      id="chat-transcript"
+    >
+
+      {% for msg in messages %}
+
+        {% if msg.role == "user" %}
+
+          <!-- Customer message -->
+
+          <div class="message-wrapper">
+
+            <div class="message-name">
+
+              {{ conversation.user.first_name }}
+              {{ conversation.user.last_name }}
+
+            </div>
+
+            <div class="user-message">
+
+              {{ msg.content }}
+
+            </div>
+
+          </div>
+
+
+        {% else %}
+
+          <!-- Agent message -->
+
+          <div class="message-wrapper agent-wrapper">
+
+            <div class="message-name agent-name">
+
+              Sage (Support Agent)
+
+            </div>
+
+            <div class="agent-message">
+
+              {{ msg.content }}
+
+            </div>
+
+          </div>
+
+        {% endif %}
+
+      {% endfor %}
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ========================================= -->
+  <!-- RIGHT : AGENT ACTIVITY -->
+  <!-- ========================================= -->
+
+  <div class="panel">
+
+    <div class="panel-header">
+
+      <div class="panel-title">
+
+        <div class="panel-icon">
+          ⚡
+        </div>
+
+        <span>
+          Agent Activity
+        </span>
+
+      </div>
+
+      <span class="panel-count">
+        Live execution
+      </span>
+
+    </div>
+
+
+    <div
+      id="agent-activity"
+    >
+
+      {% for log in agentlogs %}
+
+        <div class="activity-entry">
+
+          <span class="activity-dot"></span>
+
+          <div class="activity-top">
+
+            {% if log.event_type == "tool_call" %}
+
+              <span class="event-badge event-tool-call">
+                tool_call
+              </span>
+
+            {% elif log.event_type == "tool_result" %}
+
+              <span class="event-badge event-tool-result">
+                tool_result
+              </span>
+
+            {% elif log.event_type == "manager" %}
+
+              <span class="event-badge event-manager">
+                manager
+              </span>
+
+            {% elif log.event_type == "risk" %}
+
+              <span class="event-badge event-risk">
+                risk
+              </span>
+
+            {% else %}
+
+              <span class="event-badge event-final">
+                final
+              </span>
+
+            {% endif %}
+
+            <span class="activity-time">
+              {{ log.created_at | date:"h:i A" }}
+            </span>
+
+          </div>
+
+          <p class="activity-message">
+            {{ log.message }}
+          </p>
+
+        </div>
+
+      {% endfor %}
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<script>
+
+  /* =====================================================
+     CHAT MESSAGE
+     ===================================================== */
+
+  function appendMessage(role, name, message) {
+
+    const chatTranscript =
+      document.getElementById("chat-transcript");
+
+    if (role == "user") {
+
+      chatTranscript.insertAdjacentHTML(
+        "beforeend",
+        `
+        <div class="message-wrapper">
+
+          <div class="message-name">
+            ${name}
+          </div>
+
+          <div class="user-message">
+            ${message}
+          </div>
+
+        </div>
+        `
       );
-      agentActivity.scrollTop = agentActivity.scrollHeight;
-    }
 
-    function hideSpinner(){
-      document.getElementById("agent-spinner")?.remove();
-    }
+    } else {
 
-    function appendLog(type, message){
-      const agentActivity = document.getElementById("agent-activity");
-      const time = new Date().toLocaleTimeString([],  {hour: '2-digit', minute: '2-digit', hour12: true});
+      chatTranscript.insertAdjacentHTML(
+        "beforeend",
+        `
+        <div class="message-wrapper agent-wrapper">
 
-      const badgeColors = {
-        "tool_call": "bg-primary",
-        "tool_result": "bg-secondary",
-        "manager": "bg-warning text-dark",
-        "risk": "bg-danger",
-        "final": "bg-success"
-      }
+          <div class="message-name agent-name">
+            ${name} (AI Agent)
+          </div>
 
-      const badgeColor = badgeColors[type] || bg-secondary; // badgeColors["manager"]
+          <div class="agent-message">
+            ${message}
+          </div>
 
-      agentActivity.insertAdjacentHTML("beforeend", `
-        <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-              <span class="badge ${badgeColor}" style="font-size:10px;">${type}</span>
-              <span class="text-muted" style="font-size:11px;">${time}</span>
-            </div>
-            <p class="mb-0 text-muted" style="font-size:12px;">${message}</p>
         </div>
-      `);
+        `
+      );
 
-      agentActivity.scrollTop = agentActivity.scrollHeight;
     }
 
-    const conversationId = {{ conversation.id }};
-    const source = new EventSource(`/support/dashboard/stream/${conversationId}/`); // establishing SSE connection
+    chatTranscript.scrollTop =
+      chatTranscript.scrollHeight;
+  }
 
-    source.onmessage = (e) => {
-      const event = JSON.parse(e.data);
 
-      if(event.type == "done"){
-        hideSpinner();
-        return;
-      }
+
+  /* =====================================================
+     THINKING INDICATOR
+     ===================================================== */
+
+  function showSpinner() {
+
+    const agentActivity =
+      document.getElementById("agent-activity");
+
+    if (document.getElementById("agent-spinner")) {
+      return;
+    }
+
+    agentActivity.insertAdjacentHTML(
+      "beforeend",
+      `
+      <div
+        class="agent-thinking"
+        id="agent-spinner"
+      >
+
+        <div class="thinking-dots">
+
+          <span></span>
+          <span></span>
+          <span></span>
+
+        </div>
+
+        Agent processing...
+
+      </div>
+      `
+    );
+
+    agentActivity.scrollTop =
+      agentActivity.scrollHeight;
+  }
+
+
+
+  function hideSpinner() {
+
+    document
+      .getElementById("agent-spinner")
+      ?.remove();
+
+  }
+
+
+
+  /* =====================================================
+     AGENT ACTIVITY LOG
+     ===================================================== */
+
+  function appendLog(type, message) {
+
+    const agentActivity =
+      document.getElementById("agent-activity");
+
+    const time =
+      new Date().toLocaleTimeString(
+        [],
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true
+        }
+      );
+
+
+    const badgeClasses = {
+
+      "tool_call": "event-tool-call",
+
+      "tool_result": "event-tool-result",
+
+      "manager": "event-manager",
+
+      "risk": "event-risk",
+
+      "final": "event-final"
+
+    };
+
+
+    const badgeClass =
+      badgeClasses[type] || "event-tool-result";
+
+
+    agentActivity.insertAdjacentHTML(
+      "beforeend",
+      `
+      <div class="activity-entry">
+
+        <span class="activity-dot"></span>
+
+        <div class="activity-top">
+
+          <span class="event-badge ${badgeClass}">
+            ${type}
+          </span>
+
+          <span class="activity-time">
+            ${time}
+          </span>
+
+        </div>
+
+        <p class="activity-message">
+          ${message}
+        </p>
+
+      </div>
+      `
+    );
+
+
+    agentActivity.scrollTop =
+      agentActivity.scrollHeight;
+
+  }
+
+
+
+  /* =====================================================
+     SSE CONNECTION
+     ===================================================== */
+
+  const conversationId =
+    {{ conversation.id }};
+
+
+  const source =
+    new EventSource(
+      `/support/dashboard/stream/${conversationId}/`
+    );
+
+
+  source.onmessage = (e) => {
+
+    const event =
+      JSON.parse(e.data);
+
+
+    /* ================= DONE ================= */
+
+    if (event.type == "done") {
 
       hideSpinner();
-      
-      if(event.type == "user_message"){
-        appendMessage("user", event.name, event.message);
-        // append the message to chat transcript
-      } else if(event.type == "final"){
-        appendLog(event.type, event.message);
-        appendMessage("assistant", "Maya", event.message);
-        // append the message to transcript
-      }else{
-        appendLog(event.type, event.message);
-      }
-      
 
-      if(event.type !== "final"){
-        showSpinner();
-      };
-
-      source.onerror = () => {
-        console.log("SSE connection closed.");
-        source.close();
-      }
+      return;
     }
 
 
-    document.addEventListener("DOMContentLoaded", function(){
-      const chatTranscript = document.getElementById("chat-transcript");
-      const agentActivity = document.getElementById("agent-activity");
-      
-      if(chatTranscript){
-        chatTranscript.scrollTop = chatTranscript.scrollHeight;
+    hideSpinner();
+
+
+    /* ================= USER MESSAGE ================= */
+
+    if (event.type == "user_message") {
+
+      appendMessage(
+        "user",
+        event.name,
+        event.message
+      );
+
+    }
+
+
+    /* ================= FINAL RESPONSE ================= */
+
+    else if (event.type == "final") {
+
+      appendLog(
+        event.type,
+        event.message
+      );
+
+      appendMessage(
+        "assistant",
+        "Sage",
+        event.message
+      );
+
+    }
+
+
+    /* ================= OTHER EVENTS ================= */
+
+    else {
+
+      appendLog(
+        event.type,
+        event.message
+      );
+
+    }
+
+
+    /* ================= THINKING ================= */
+
+    if (event.type !== "final") {
+
+      showSpinner();
+
+    }
+
+  };
+
+
+  /* =====================================================
+     SSE ERROR / CONNECTION CLOSED
+     ===================================================== */
+
+  source.onerror = () => {
+
+    console.log(
+      "SSE connection closed."
+    );
+
+    source.close();
+
+  };
+
+
+
+  /* =====================================================
+     INITIAL SCROLL
+     ===================================================== */
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+      const chatTranscript =
+        document.getElementById(
+          "chat-transcript"
+        );
+
+      const agentActivity =
+        document.getElementById(
+          "agent-activity"
+        );
+
+
+      if (chatTranscript) {
+
+        chatTranscript.scrollTop =
+          chatTranscript.scrollHeight;
+
       }
-      if(agentActivity){
-        agentActivity.scrollTop = agentActivity.scrollHeight;
+
+
+      if (agentActivity) {
+
+        agentActivity.scrollTop =
+          agentActivity.scrollHeight;
+
       }
-    })
-  </script>
+
+    }
+  );
+
+</script>
+
 {% endblock %}
