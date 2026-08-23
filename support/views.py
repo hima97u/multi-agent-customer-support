@@ -7,6 +7,7 @@ from support.agents import run_support_agent
 from .models import Conversation
 from support.models import Message
 from django.contrib.admin.views.decorators import staff_member_required
+from .langchain_agents import run_support_agent_langchain
 
 def chat(request,order_id): # comig from order detail sendMessage() fxn
     if request.method == 'POST':
@@ -25,7 +26,7 @@ def chat(request,order_id): # comig from order detail sendMessage() fxn
         Message.objects.create(conversation=conversation,role="user",content=user_message)
 
         # send user message and converstion to LLM 
-        reply = run_support_agent(user_message,conversation.id,order.id,request.user.id) # this will return the reply from LLM
+        reply = run_support_agent_langchain(user_message,conversation.id,order.id,request.user.id) # this will return the reply from LLM ### => langchain done
 
         # # print("REPLY:", repr(reply)) for debugging purposes
         # # print("REPLY TYPE:", type(reply))
@@ -63,4 +64,4 @@ def conversation_detail(request, conversation_id):
     return render(request, "support/conversation_detail.html", context)
     
 
-# Testing GitHub Actions CI
+

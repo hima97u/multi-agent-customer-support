@@ -218,3 +218,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+% local file to populate test data
+populate_test_data.py
+
+# VS Code
+.vscode/
+
+# ChromaDB local database
+chroma_db/

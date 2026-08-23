@@ -4,6 +4,7 @@ from orders.models import Order, RefundRequest
 from django.utils import timezone
 
 from support.tracking_data import DELIVERY_DATA
+from .rag import search_knowledge_base as rag_search
 
 
 
@@ -95,4 +96,7 @@ def get_customer_risk_profile(user_id):
         "pending_refunds": pending,
     }
 
-    
+
+def search_knowledge_base(query):
+    result = rag_search(query)
+    return {"result": result}
