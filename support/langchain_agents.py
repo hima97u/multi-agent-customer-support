@@ -131,7 +131,18 @@ def run_manager_agent_langchain(case_summary, conversation_id):
         "messages": [{"role": "user", "content": case_summary}]
     })
 
-    decision = result["messages"][-1].content
+    content = result["messages"][-1].content
+
+    if isinstance(content, list):
+        decision = "".join(
+        block.get("text", "")
+        for block in content
+        if isinstance(block, dict) and block.get("type") == "text"
+    )
+    else:
+        decision = content
+        
+        
     event = {"type": "manager", "message": f"Decision: {decision[:200]}"}
     publish(conversation_id, event)
 
@@ -167,7 +178,16 @@ def run_risk_agent_langchain(user_id, conversation_id):
     result = risk_agent.invoke({
         "messages": [{"role": "user", "content": f"Please assess the fraud risk for user ID {user_id}. User your tool to get their profile and return a verdict."}]
     })
-    verdict = result["messages"][-1].content
+    content = result["messages"][-1].content
+
+    if isinstance(content, list):
+        verdict = "".join(
+        block.get("text", "")   
+        for block in content
+        if isinstance(block, dict) and block.get("type") == "text"
+    )
+    else:
+        verdict = content
 
     event = {"type": "risk", "message": f"Verdict: {verdict[:200]}"}
     publish(conversation_id, event)
