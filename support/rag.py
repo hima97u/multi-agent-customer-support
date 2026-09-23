@@ -1,20 +1,31 @@
+import os
+
 import chromadb
 from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
-import os
 from pypdf import PdfReader
 
 
+# Keep local Chroma traffic off the machine's HTTP proxy.
+os.environ["NO_PROXY"] = "localhost,127.0.0.1"
+os.environ["no_proxy"] = "localhost,127.0.0.1"
 
-# initialize chromadb client
-client = chromadb.PersistentClient(path="./chroma_db")
+_collection = None
 
-embedding_fn = DefaultEmbeddingFunction()
 
-# get or create collection - just like table in regular db
-collection = client.get_or_create_collection(
-    name="coolbreeze_docs",
-    embedding_function=embedding_fn
-)
+def _get_collection():
+    global _collection
+
+    if _collection is None:
+        client = chromadb.HttpClient(
+            host=os.getenv("CHROMA_HOST", "localhost"),
+            port=int(os.getenv("CHROMA_PORT", "8001")),
+        )
+        _collection = client.get_or_create_collection(
+            name="roger_store_docs",
+            embedding_function=DefaultEmbeddingFunction(),
+        )
+
+    return _collection
 
 
 def chunk_text(text, chunk_size=500): 
@@ -62,14 +73,14 @@ def load_documents():
                 ids.append(f"{filename}_{i}")
 
     if documents:
-        collection.add(documents=documents, ids=ids)
+        _get_collection().add(documents=documents, ids=ids)
 
     print(f"Loaded {len(documents)} chunks into ChromaDB")
     
         
 
 def search_knowledge_base(query):
-    results = collection.query(query_texts=[query], n_results=3)
+    results = _get_collection().query(query_texts=[query], n_results=3)
     print("DEBUG RESULTS:", results["documents"])
     if not results["documents"][0]:
         return "No relevant information found in company documents."

@@ -30,7 +30,7 @@ def check_delivery_status(tracking_number: str, carrier: str) -> dict:
 
 @tool
 def search_knowledge_base(query: str) -> str:
-    """Search CoolBreeze AC company documents including refund policy, warranty policy, and product FAQs. Use this when customer asks about company policies, warranty coverage, warranty claims, refund eligibility, or any general product information that requires accurate company documentation."""
+    """Search Roger Store company documents including refund policy, warranty policy, and product FAQs. Use this when customer asks about company policies, warranty coverage, warranty claims, refund eligibility, or any general product information that requires accurate company documentation."""
     return _search_knowledge_base(query)
 
 

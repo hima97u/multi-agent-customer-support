@@ -227,3 +227,10 @@ populate_test_data.py
 
 # ChromaDB local database
 chroma_db/
+
+data.json
+
+# future working 
+archhh
+future
+orders/graph/*

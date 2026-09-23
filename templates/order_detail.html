@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Order #{{ order.id }} — CoolBreeze AC</title>
+  <title>Order #{{ order.id }} — Roger Store</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <style>
     body {
@@ -232,7 +232,7 @@
 <body>
 
 <nav class="navbar d-flex align-items-center justify-content-between">
-  <span class="navbar-brand">❄️ CoolBreeze AC</span>
+  <span class="navbar-brand"></span>
   <div class="d-flex align-items-center">
     <span class="navbar-text">Hi, {{ request.user.first_name }}</span>
     <form method="POST" action="{% url 'logout' %}" style="display:inline;">
@@ -403,6 +403,28 @@
     messages.scrollTop = messages.scrollHeight;
   }
 
+  function getCookie(name) {
+    let cookieValue = null;
+
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+
+            if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(
+                    cookie.substring(name.length + 1)
+                );
+                break;
+            }
+        }
+    }
+
+    return cookieValue;
+}
+
+
   async function sendMessage(){
     const input = document.getElementById("chat-input");
     const message = input.value.trim();
@@ -422,10 +444,11 @@
     try{
       const response = await fetch("/support/chat/{{order.id}}/", { // where to send the message
         method: "POST", // send as POST request
-        headers: { // how to send the message
-          "Content-Type": "application/json",
-          "X-CSRFToken": "{{ csrf_token }}"
-        },
+          headers: { // how to send message
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken")
+    },
+        
         body: JSON.stringify({message: message}) // what to send
       });
 

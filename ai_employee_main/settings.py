@@ -88,6 +88,14 @@ WSGI_APPLICATION = 'ai_employee_main.wsgi.application'
 # }
 
 
+# for migrate
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db_backup.sqlite3",
+#     }
+# }
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",

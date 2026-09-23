@@ -10,11 +10,32 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: customer_support
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d customer_support"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     env:
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       DEBUG: ${{ vars.DEBUG }}
       MODEL_NAME: ${{ vars.MODEL_NAME }}
+
+      POSTGRES_DB: customer_support
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
 
     steps:
       - name: Checkout code
@@ -33,6 +54,10 @@ jobs:
       - name: Django Check
         run: |
           python manage.py check
+
+      - name: Run Migrations
+        run: |
+          python manage.py migrate
 
       - name: Run Tests
         run: |
